@@ -33,6 +33,7 @@ extern const volatile char kFuseWire[];
 TEMPLATE_CC = """
 #include "electron/fuses.h"
 #include "base/dcheck_is_on.h"
+#include "shell/browser/api/electron_api_app.h"
 
 #if DCHECK_IS_ON()
 #include "base/command_line.h"
@@ -83,7 +84,12 @@ bool Is{name}Enabled() {
     }
   }
 #endif
-  return kFuseWire[{index}] == '1';
+  bool is_packaged_app = electron::api::App::IsPackaged();
+  if (kFuseWire[{index}] == '1') return true;
+  if (kFuseWire[{index}] == 'p' && is_packaged_app) return true;
+  // we assume the dev runner and packaged apps are mutually exclusive
+  if (kFuseWire[{index}] == 'd' && !is_packaged_app) return true;
+  return false;
 }
 """.replace("{name}", name).replace("{switch_name}", f"set-fuse-{fuse.lower()}").replace("{index}", str(index))
 
